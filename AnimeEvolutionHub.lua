@@ -7,17 +7,10 @@ local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Safe check for Bridge
-local Bridge
-local bridgeSuccess, bridgeErr = pcall(function()
-    Bridge = ReplicatedStorage:FindFirstChild("Bridge")
-    if not Bridge then
-        warn("[Script] Bridge RemoteEvent not found")
-    end
-end)
-
-if not bridgeSuccess or not Bridge then
-    warn("[Script Critical] Bridge missing: " .. tostring(bridgeErr))
+-- Safe Bridge check
+local Bridge = ReplicatedStorage:FindFirstChild("Bridge")
+if not Bridge then
+    warn("[Script] Bridge not found - exiting")
     return
 end
 
@@ -82,18 +75,18 @@ Tabs.Home = {
         desc.Font = Enum.Font.Gotham
         desc.TextSize = 17
         desc.TextColor3 = SETTINGS.COLORS.TextDim
-        desc.Text = "Egg Roll and Rebirth now in separate tabs.\nStable & crash-free.\nHave fun!"
+        desc.Text = "Auto Farm (Egg Roll) and Rebirth are now separate tabs.\nEnjoy!"
         desc.Parent = container
     end
 }
 
-Tabs["Egg Roll"] = {
+Tabs["Egg Hatch"] = {
     Build = function(container)
         local title = Instance.new("TextLabel")
         title.Size = UDim2.new(1, -24, 0, 38)
         title.Position = UDim2.new(0, 12, 0, 12)
         title.BackgroundTransparency = 1
-        title.Text = "Egg Roll"
+        title.Text = "Auto Farm"
         title.Font = Enum.Font.GothamBold
         title.TextSize = 28
         title.TextColor3 = SETTINGS.COLORS.Text
@@ -209,7 +202,7 @@ Tabs.Rebirth = {
         toggleRank.Position = UDim2.new(0, 16, 0, 80)
         toggleRank.BackgroundColor3 = SETTINGS.COLORS.Info
         toggleRank.TextColor3 = Color3.new(1,1,1)
-        toggleRank.Text = "Auto Rebirth : OFF"
+        toggleRank.Text = "Auto RankUp : OFF"
         toggleRank.Font = Enum.Font.GothamBold
         toggleRank.TextSize = 18
         toggleRank.Parent = container
@@ -217,7 +210,7 @@ Tabs.Rebirth = {
 
         toggleRank.MouseButton1Click:Connect(function()
             autoRankUp = not autoRankUp
-            toggleRank.Text = "Auto Rebirth : " .. (autoRankUp and "ON" or "OFF")
+            toggleRank.Text = "Auto RankUp : " .. (autoRankUp and "ON" or "OFF")
             toggleRank.BackgroundColor3 = autoRankUp and SETTINGS.COLORS.AccentDark or SETTINGS.COLORS.Info
 
             if autoRankUp then
@@ -263,7 +256,7 @@ Tabs.Credits = {
         txt.Font = Enum.Font.Gotham
         txt.TextSize = 16
         txt.TextColor3 = SETTINGS.COLORS.TextDim
-        txt.Text = "Hub with timed key system.\nEgg Roll & Rebirth now in separate tabs.\nStable & crash-free."
+        txt.Text = "Hub with separate Egg Roll & Rebirth tabs.\nEnjoy responsibly!"
         txt.Parent = container
     end
 }
@@ -389,7 +382,7 @@ local function createHubUI()
         end
     end
 
-    local order = {"Home", "Egg Roll", "Rebirth", "Credits"}
+    local order = {"Home", "Auto Farm", "Rebirth", "Credits"}
 
     for i, tabName in ipairs(order) do
         local btn = Instance.new("TextButton")
