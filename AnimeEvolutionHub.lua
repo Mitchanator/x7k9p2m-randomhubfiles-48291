@@ -7,18 +7,18 @@ local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Safe check for Bridge (prevents infinite wait or crash if missing)
+-- Safe check for Bridge (prevents crash/hang if missing)
 local Bridge
 local bridgeSuccess, bridgeErr = pcall(function()
     Bridge = ReplicatedStorage:FindFirstChild("Bridge")
     if not Bridge then
-        warn("[Script] Bridge RemoteEvent not found - script will exit safely")
+        warn("[Script] Bridge RemoteEvent not found - exiting safely")
     end
 end)
 
 if not bridgeSuccess or not Bridge then
     warn("[Script Critical] Could not locate Bridge: " .. tostring(bridgeErr))
-    return  -- Exit early without crashing Roblox
+    return
 end
 
 local SETTINGS = {
@@ -41,7 +41,7 @@ local SETTINGS = {
 }
 
 local AUTO_FARM = {
-    ROLL_INTERVAL = 0.12,   -- Safe & stable value (prevents spam crash)
+    ROLL_INTERVAL = 0.12,
     RANKUP_INTERVAL = 1,
     MAPS = {
         "Anthill", "Fiery World", "Mines", "Shadow Castle",
@@ -82,18 +82,18 @@ Tabs.Home = {
         desc.Font = Enum.Font.Gotham
         desc.TextSize = 17
         desc.TextColor3 = SETTINGS.COLORS.TextDim
-        desc.Text = "Crash-fixed & stable version.\nAuto Roll should no longer crash the game.\nEnjoy!"
+        desc.Text = "Separate tabs for Egg Roll & Rebirth.\nStable & crash-free.\nEnjoy!"
         desc.Parent = container
     end
 }
 
-Tabs["Auto Farm"] = {
+Tabs["Egg Roll"] = {
     Build = function(container)
         local title = Instance.new("TextLabel")
         title.Size = UDim2.new(1, -24, 0, 38)
         title.Position = UDim2.new(0, 12, 0, 12)
         title.BackgroundTransparency = 1
-        title.Text = "Auto Farm"
+        title.Text = "Egg Roll"
         title.Font = Enum.Font.GothamBold
         title.TextSize = 28
         title.TextColor3 = SETTINGS.COLORS.Text
@@ -161,17 +161,6 @@ Tabs["Auto Farm"] = {
         toggleRoll.Parent = container
         Instance.new("UICorner", toggleRoll).CornerRadius = UDim.new(0, 10)
 
-        local toggleRank = Instance.new("TextButton")
-        toggleRank.Size = UDim2.new(0, 220, 0, 50)
-        toggleRank.Position = UDim2.new(0, 16, 0, 320)
-        toggleRank.BackgroundColor3 = SETTINGS.COLORS.Info
-        toggleRank.TextColor3 = Color3.new(1,1,1)
-        toggleRank.Text = "Auto RankUp : OFF"
-        toggleRank.Font = Enum.Font.GothamBold
-        toggleRank.TextSize = 18
-        toggleRank.Parent = container
-        Instance.new("UICorner", toggleRank).CornerRadius = UDim.new(0, 10)
-
         local function updateRollButton()
             toggleRoll.Text = autoRolling and "Stop Auto Roll" or "Start Auto Roll"
             toggleRoll.BackgroundColor3 = autoRolling and SETTINGS.COLORS.Danger or SETTINGS.COLORS.Success
@@ -198,9 +187,37 @@ Tabs["Auto Farm"] = {
             end
         end)
 
+        updateRollButton()
+    end
+}
+
+Tabs.Rebirth = {
+    Build = function(container)
+        local title = Instance.new("TextLabel")
+        title.Size = UDim2.new(1, -24, 0, 38)
+        title.Position = UDim2.new(0, 12, 0, 12)
+        title.BackgroundTransparency = 1
+        title.Text = "Rebirth"
+        title.Font = Enum.Font.GothamBold
+        title.TextSize = 28
+        title.TextColor3 = SETTINGS.COLORS.Text
+        title.TextXAlignment = Enum.TextXAlignment.Left
+        title.Parent = container
+
+        local toggleRank = Instance.new("TextButton")
+        toggleRank.Size = UDim2.new(0, 220, 0, 50)
+        toggleRank.Position = UDim2.new(0, 16, 0, 80)
+        toggleRank.BackgroundColor3 = SETTINGS.COLORS.Info
+        toggleRank.TextColor3 = Color3.new(1,1,1)
+        toggleRank.Text = "Auto Rebirth : OFF"
+        toggleRank.Font = Enum.Font.GothamBold
+        toggleRank.TextSize = 18
+        toggleRank.Parent = container
+        Instance.new("UICorner", toggleRank).CornerRadius = UDim.new(0, 10)
+
         toggleRank.MouseButton1Click:Connect(function()
             autoRankUp = not autoRankUp
-            toggleRank.Text = "Auto RankUp : " .. (autoRankUp and "ON" or "OFF")
+            toggleRank.Text = "Auto Rebirth : " .. (autoRankUp and "ON" or "OFF")
             toggleRank.BackgroundColor3 = autoRankUp and SETTINGS.COLORS.AccentDark or SETTINGS.COLORS.Info
 
             if autoRankUp then
@@ -219,8 +236,6 @@ Tabs["Auto Farm"] = {
                 end
             end
         end)
-
-        updateRollButton()
     end
 }
 
@@ -248,7 +263,7 @@ Tabs.Credits = {
         txt.Font = Enum.Font.Gotham
         txt.TextSize = 16
         txt.TextColor3 = SETTINGS.COLORS.TextDim
-        txt.Text = "Hub with timed key system.\nCrash fixed - stable Auto Roll.\nEnjoy responsibly!"
+        txt.Text = "Hub with timed key system.\nEgg Roll & Rebirth separated.\nStable & crash-free."
         txt.Parent = container
     end
 }
@@ -374,7 +389,7 @@ local function createHubUI()
         end
     end
 
-    local order = {"Home", "Auto Farm", "Credits"}
+    local order = {"Home", "Egg Roll", "Rebirth", "Credits"}
 
     for i, tabName in ipairs(order) do
         local btn = Instance.new("TextButton")
@@ -577,5 +592,4 @@ local function showKeyScreen()
     end)
 end
 
--- Start the key screen
 showKeyScreen()
