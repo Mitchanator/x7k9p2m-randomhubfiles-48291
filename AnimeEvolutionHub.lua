@@ -3,25 +3,26 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
-local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
+print("[Debug] Starting script")
+
 -- Safe Bridge check
 local Bridge = ReplicatedStorage:FindFirstChild("Bridge")
 if not Bridge then
-    warn("[Script] Bridge not found")
+    warn("[Debug] Bridge not found - exiting")
     return
 end
+print("[Debug] Bridge found")
 
--- Minimize keybind (RightShift by default)
+-- Custom key to toggle minimize
 local MINIMIZE_KEY = Enum.KeyCode.RightShift
 
 local SETTINGS = {
     HUB_TITLE = "My Script Hub",
     KEY_DB_URL = "https://pastebin.com/raw/1X5iW7Pj",
-
     COLORS = {
         Background = Color3.fromRGB(18, 18, 24),
         Primary = Color3.fromRGB(30, 30, 38),
@@ -49,18 +50,10 @@ local AUTO_FARM = {
 
 local autoRolling = false
 local autoRankUp = false
-local autoKill = false
 local rollThread = nil
 local rankThread = nil
-local killThread = nil
 local selectedMap = AUTO_FARM.MAPS[1]
-local hubGui = nil  -- for minimize toggle
-
--- Mines NPCs (from your list)
-local MINES_NPCS = {
-    "Guiltless", "Guilty", "Kanghi", "Kianghi", "Liandas", "Nabodas",
-    "Ogre", "Orc", "OrcWarrior", "Princess", "Scanone", "Zeldos"
-}
+local hubGui = nil
 
 local Tabs = {}
 
@@ -88,7 +81,7 @@ Tabs.Home = {
         desc.Font = Enum.Font.Gotham
         desc.TextSize = 17
         desc.TextColor3 = SETTINGS.COLORS.TextDim
-        desc.Text = "Press RightShift to minimize/maximize.\nAuto Kill tab now has Mines NPCs!\nSelect NPC → Teleport → Auto Kill"
+        desc.Text = "Press RightShift to minimize/maximize the hub.\nEgg Roll & Rebirth tabs separated.\nEnjoy!"
         desc.Parent = container
     end
 }
@@ -144,7 +137,6 @@ Tabs["Egg Roll"] = {
             btn.TextSize = 15
             btn.Parent = listFrame
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
             btn.MouseButton1Click:Connect(function()
                 selectedMap = map
                 dropdown.Text = "Egg: " .. map
@@ -245,144 +237,6 @@ Tabs.Rebirth = {
     end
 }
 
-Tabs["Auto Kill"] = {
-    Build = function(container)
-        local title = Instance.new("TextLabel")
-        title.Size = UDim2.new(1, -24, 0, 38)
-        title.Position = UDim2.new(0, 12, 0, 12)
-        title.BackgroundTransparency = 1
-        title.Text = "Auto Kill - Mines"
-        title.Font = Enum.Font.GothamBold
-        title.TextSize = 28
-        title.TextColor3 = SETTINGS.COLORS.Text
-        title.TextXAlignment = Enum.TextXAlignment.Left
-        title.Parent = container
-
-        local npcDropdown = Instance.new("TextButton")
-        npcDropdown.Size = UDim2.new(0, 220, 0, 42)
-        npcDropdown.Position = UDim2.new(0, 16, 0, 60)
-        npcDropdown.BackgroundColor3 = SETTINGS.COLORS.Primary
-        npcDropdown.TextColor3 = SETTINGS.COLORS.Text
-        npcDropdown.Text = "Select NPC"
-        npcDropdown.Font = Enum.Font.GothamSemibold
-        npcDropdown.TextSize = 16
-        npcDropdown.Parent = container
-        Instance.new("UICorner", npcDropdown).CornerRadius = UDim.new(0, 8)
-
-        local npcList = Instance.new("ScrollingFrame")
-        npcList.Size = UDim2.new(0, 220, 0, 180)
-        npcList.Position = UDim2.new(0, 16, 0, 108)
-        npcList.BackgroundColor3 = SETTINGS.COLORS.Primary
-        npcList.BorderSizePixel = 0
-        npcList.ScrollBarThickness = 4
-        npcList.Visible = false
-        npcList.CanvasSize = UDim2.new(0, 0, 0, #MINES_NPCS * 38)
-        npcList.Parent = container
-        Instance.new("UICorner", npcList).CornerRadius = UDim.new(0, 8)
-
-        local listLayout = Instance.new("UIListLayout")
-        listLayout.Padding = UDim.new(0, 6)
-        listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        listLayout.Parent = npcList
-
-        local selectedNPC = nil
-        for _, npcName in ipairs(MINES_NPCS) do
-            local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, -12, 0, 32)
-            btn.BackgroundColor3 = SETTINGS.COLORS.Secondary
-            btn.TextColor3 = SETTINGS.COLORS.Text
-            btn.Text = npcName
-            btn.Font = Enum.Font.Gotham
-            btn.TextSize = 15
-            btn.Parent = npcList
-            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-            btn.MouseButton1Click:Connect(function()
-                selectedNPC = npcName
-                npcDropdown.Text = "NPC: " .. npcName
-                npcList.Visible = false
-            end)
-        end
-
-        npcDropdown.MouseButton1Click:Connect(function()
-            npcList.Visible = not npcList.Visible
-        end)
-
-        local tpBtn = Instance.new("TextButton")
-        tpBtn.Size = UDim2.new(0, 220, 0, 45)
-        tpBtn.Position = UDim2.new(0, 16, 0, 300)
-        tpBtn.BackgroundColor3 = SETTINGS.COLORS.Accent
-        tpBtn.TextColor3 = Color3.new(1,1,1)
-        tpBtn.Text = "Teleport to Nearest"
-        tpBtn.Font = Enum.Font.GothamBold
-        tpBtn.TextSize = 16
-        tpBtn.Parent = container
-        Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 10)
-
-        local toggleKill = Instance.new("TextButton")
-        toggleKill.Size = UDim2.new(0, 220, 0, 50)
-        toggleKill.Position = UDim2.new(0, 16, 0, 360)
-        toggleKill.BackgroundColor3 = SETTINGS.COLORS.Info
-        toggleKill.TextColor3 = Color3.new(1,1,1)
-        toggleKill.Text = "Auto Kill : OFF"
-        toggleKill.Font = Enum.Font.GothamBold
-        toggleKill.TextSize = 18
-        toggleKill.Parent = container
-        Instance.new("UICorner", toggleKill).CornerRadius = UDim.new(0, 10)
-
-        local function getNearestNPC(searchName)
-            local best = nil
-            local shortest = math.huge
-            local lower = searchName:lower()
-
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") and obj.Name:lower():find(lower) then
-                    local dist = (player.Character.HumanoidRootPart.Position - obj.HumanoidRootPart.Position).Magnitude
-                    if dist < shortest then
-                        shortest = dist
-                        best = obj.HumanoidRootPart
-                    end
-                end
-            end
-            return best
-        end
-
-        tpBtn.MouseButton1Click:Connect(function()
-            if not selectedNPC then return end
-            local target = getNearestNPC(selectedNPC)
-            if target and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CFrame = target.CFrame + Vector3.new(0, 5, 0)
-            end
-        end)
-
-        toggleKill.MouseButton1Click:Connect(function()
-            autoKill = not autoKill
-            toggleKill.Text = "Auto Kill : " .. (autoKill and "ON" or "OFF")
-            toggleKill.BackgroundColor3 = autoKill and SETTINGS.COLORS.AccentDark or SETTINGS.COLORS.Info
-
-            if autoKill then
-                killThread = task.spawn(function()
-                    while autoKill do
-                        if selectedNPC then
-                            local target = getNearestNPC(selectedNPC)
-                            if target and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                                player.Character.HumanoidRootPart.CFrame = target.CFrame + Vector3.new(0, 5, 0)
-                                VirtualUser:Button1Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                                task.wait(0.08)
-                                VirtualUser:Button1Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-                            end
-                        end
-                        task.wait(0.3)
-                    end
-                end)
-            else
-                if killThread then task.cancel(killThread) killThread = nil end
-            end
-        end)
-    end
-}
-
 Tabs.Credits = {
     Build = function(container)
         local title = Instance.new("TextLabel")
@@ -407,30 +261,25 @@ Tabs.Credits = {
         txt.Font = Enum.Font.Gotham
         txt.TextSize = 16
         txt.TextColor3 = SETTINGS.COLORS.TextDim
-        txt.Text = "Hub with Mines NPCs in Auto Kill tab.\nTeleport + auto attack.\nEnjoy responsibly!"
+        txt.Text = "Hub with Egg Roll & Rebirth tabs.\nPress RightShift to minimize/maximize.\nEnjoy! /nMade by Mitchanator"
         txt.Parent = container
     end
 }
-
 local function clearChildren(parent)
     for _, v in parent:GetChildren() do
         if v:IsA("GuiObject") then v:Destroy() end
     end
 end
-
 local currentTabButton = nil
-local hubGui = nil
-
+local hubGui = nil -- we'll store the main ScreenGui here
 local function createHubUI()
     local old = playerGui:FindFirstChild("MyScriptHub", true)
     if old then old:Destroy() end
-
     local sg = Instance.new("ScreenGui")
     sg.Name = "MyScriptHub"
     sg.ResetOnSpawn = false
     sg.Parent = playerGui
-    hubGui = sg
-
+    hubGui = sg -- store reference for minimize toggle
     local main = Instance.new("Frame")
     main.Name = "Main"
     main.Size = UDim2.new(0, 720, 0, 460)
@@ -439,14 +288,12 @@ local function createHubUI()
     main.BorderSizePixel = 0
     main.Parent = sg
     Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
-
     local top = Instance.new("Frame")
     top.Size = UDim2.new(1,0,0,48)
     top.BackgroundColor3 = SETTINGS.COLORS.Primary
     top.BorderSizePixel = 0
     top.Parent = main
     Instance.new("UICorner", top).CornerRadius = UDim.new(0,12)
-
     local cover = Instance.new("Frame")
     cover.Size = UDim2.new(1,0,0,12)
     cover.Position = UDim2.new(0,0,1,-12)
@@ -454,7 +301,6 @@ local function createHubUI()
     cover.BorderSizePixel = 0
     cover.ZIndex = 2
     cover.Parent = top
-
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1,-80,1,0)
     titleLbl.Position = UDim2.new(0,16,0,0)
@@ -465,7 +311,6 @@ local function createHubUI()
     titleLbl.TextColor3 = SETTINGS.COLORS.Text
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.Parent = top
-
     local close = Instance.new("TextButton")
     close.Size = UDim2.new(0,36,0,36)
     close.Position = UDim2.new(1,-48,0.5,-18)
@@ -476,18 +321,14 @@ local function createHubUI()
     close.TextSize = 22
     close.Parent = top
     Instance.new("UICorner", close).CornerRadius = UDim.new(0,8)
-
     close.MouseButton1Click:Connect(function()
         sg:Destroy()
         autoRolling = false
         autoRankUp = false
-        autoKill = false
         if rollThread then task.cancel(rollThread) rollThread = nil end
         if rankThread then task.cancel(rankThread) rankThread = nil end
-        if killThread then task.cancel(killThread) killThread = nil end
         hubGui = nil
     end)
-
     local tabContainer = Instance.new("ScrollingFrame")
     tabContainer.Size = UDim2.new(0, 180, 1, -60)
     tabContainer.Position = UDim2.new(0, 12, 0, 56)
@@ -495,12 +336,10 @@ local function createHubUI()
     tabContainer.ScrollBarThickness = 4
     tabContainer.CanvasSize = UDim2.new(0,0,0,0)
     tabContainer.Parent = main
-
     local tabLayout = Instance.new("UIListLayout")
     tabLayout.Padding = UDim.new(0,10)
     tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
     tabLayout.Parent = tabContainer
-
     local content = Instance.new("ScrollingFrame")
     content.Name = "Content"
     content.Size = UDim2.new(1, -204, 1, -60)
@@ -512,20 +351,17 @@ local function createHubUI()
     content.AutomaticCanvasSize = Enum.AutomaticSize.Y
     content.Parent = main
     Instance.new("UICorner", content).CornerRadius = UDim.new(0,10)
-
     local pad = Instance.new("UIPadding")
     pad.PaddingTop = UDim.new(0,16)
     pad.PaddingLeft = UDim.new(0,16)
     pad.PaddingRight = UDim.new(0,16)
     pad.PaddingBottom = UDim.new(0,16)
     pad.Parent = content
-
     local function loadTab(name)
         clearChildren(content)
         if Tabs[name] and Tabs[name].Build then
-            Tabs[name].Build(container)
+            Tabs[name].Build(content)
         end
-
         if currentTabButton then
             currentTabButton.BackgroundColor3 = SETTINGS.COLORS.Primary
         end
@@ -537,9 +373,7 @@ local function createHubUI()
             end
         end
     end
-
-    local order = {"Home", "Egg Roll", "Rebirth", "Auto Kill", "Credits"}
-
+    local order = {"Home", "Egg Roll", "Rebirth", "Credits"}
     for i, tabName in ipairs(order) do
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, 46)
@@ -550,14 +384,11 @@ local function createHubUI()
         btn.TextSize = 18
         btn.Parent = tabContainer
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0,9)
-
         btn.MouseButton1Click:Connect(function()
             loadTab(tabName)
         end)
-
         if i == 1 then currentTabButton = btn end
     end
-
     local dragging, dragStart, startPos
     top.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -566,13 +397,11 @@ local function createHubUI()
             startPos = main.Position
         end
     end)
-
     top.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
@@ -584,15 +413,141 @@ local function createHubUI()
             )
         end
     end)
-
     loadTab("Home")
 end
-
 local function showKeyScreen()
-    -- (your key system code - unchanged)
-    -- ...
+    local old = playerGui:FindFirstChild("HubKeyScreen", true)
+    if old then old:Destroy() end
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "HubKeyScreen"
+    sg.ResetOnSpawn = false
+    sg.Parent = playerGui
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 400, 0, 280)
+    frame.Position = UDim2.new(0.5, -200, 0.5, -140)
+    frame.BackgroundColor3 = SETTINGS.COLORS.Background
+    frame.BorderSizePixel = 0
+    frame.Parent = sg
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,-24,0,44)
+    lbl.Position = UDim2.new(0,12,0,16)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = "Enter License Key"
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextSize = 28
+    lbl.TextColor3 = SETTINGS.COLORS.Text
+    lbl.Parent = frame
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(1,-40,0,50)
+    box.Position = UDim2.new(0,20,0,74)
+    box.BackgroundColor3 = SETTINGS.COLORS.Primary
+    box.TextColor3 = SETTINGS.COLORS.Text
+    box.PlaceholderText = "XXXX-XXXX-XXXX"
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 20
+    box.ClearTextOnFocus = false
+    box.Parent = frame
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,10)
+    local status = Instance.new("TextLabel")
+    status.Size = UDim2.new(1,-40,0,70)
+    status.Position = UDim2.new(0,20,0,132)
+    status.BackgroundTransparency = 1
+    status.Text = ""
+    status.TextWrapped = true
+    status.TextYAlignment = Enum.TextYAlignment.Top
+    status.Font = Enum.Font.Gotham
+    status.TextSize = 16
+    status.TextColor3 = SETTINGS.COLORS.Error
+    status.Parent = frame
+    local submit = Instance.new("TextButton")
+    submit.Size = UDim2.new(1,-40,0,52)
+    submit.Position = UDim2.new(0,20,0,210)
+    submit.BackgroundColor3 = SETTINGS.COLORS.Accent
+    submit.TextColor3 = Color3.new(1,1,1)
+    submit.Text = "Validate & Unlock"
+    submit.Font = Enum.Font.GothamBold
+    submit.TextSize = 22
+    submit.Parent = frame
+    Instance.new("UICorner", submit).CornerRadius = UDim.new(0,10)
+    local function fetchKeyDB()
+        local methods = {
+            function() return game:HttpGet(SETTINGS.KEY_DB_URL, true) end,
+            function() if syn and syn.request then return syn.request({Url = SETTINGS.KEY_DB_URL, Method = "GET"}).Body end end,
+            function() if http and http.request then return http.request({Url = SETTINGS.KEY_DB_URL, Method = "GET"}).Body end end,
+            function() if request then return request({Url = SETTINGS.KEY_DB_URL, Method = "GET"}).Body end end,
+        }
+        for i, meth in ipairs(methods) do
+            local s, r = pcall(meth)
+            if s and typeof(r) == "string" and #r > 5 then
+                return r
+            end
+        end
+        return nil
+    end
+    submit.MouseButton1Click:Connect(function()
+        local input = box.Text:match("^%s*(.-)%s*$")
+        if input == "" then
+            status.Text = "Please enter a key."
+            status.TextColor3 = SETTINGS.COLORS.Error
+            return
+        end
+        status.Text = "Checking license..."
+        status.TextColor3 = SETTINGS.COLORS.TextDim
+        local raw = fetchKeyDB()
+        if not raw then
+            status.Text = "Cannot reach key database.\nHTTP may be blocked in your executor."
+            status.TextColor3 = SETTINGS.COLORS.Error
+            return
+        end
+        local s, data = pcall(HttpService.JSONDecode, HttpService, raw)
+        if not s or type(data) ~= "table" then
+            status.Text = "Key database format invalid."
+            status.TextColor3 = SETTINGS.COLORS.Error
+            return
+        end
+        local entry = nil
+        for _, e in ipairs(data) do
+            if e.key == input then
+                entry = e
+                break
 end
-
+        end
+        if not entry then
+            status.Text = "Invalid key - not found."
+            status.TextColor3 = SETTINGS.COLORS.Error
+            return
+        end
+        local expire = entry.expires
+        if not expire or expire == "" then
+            status.Text = "Valid (no expiration date)."
+            status.TextColor3 = SETTINGS.COLORS.Success
+            task.wait(1.2)
+            sg:Destroy()
+            createHubUI()
+            return
+        end
+        local ey, em, ed = expire:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)$")
+        if not (ey and em and ed) then
+            status.Text = "Invalid expiration date format."
+            return
+        end
+        local expireDays = tonumber(ey) * 365 + tonumber(em) * 31 + tonumber(ed)
+        local now = os.date("!*t")
+        local todayDays = now.year * 365 + now.month * 31 + now.day
+        if todayDays > expireDays then
+            status.Text = "This key has expired."
+            status.TextColor3 = SETTINGS.COLORS.Error
+            return
+        end
+        local remaining = expireDays - todayDays
+        status.Text = "Valid! ≈" .. remaining .. " days remaining"
+        status.TextColor3 = SETTINGS.COLORS.Success
+        task.wait(1.5)
+        sg:Destroy()
+        createHubUI()
+    end)
+end
 -- Minimize/Maximize keybind
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
@@ -602,5 +557,50 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         end
     end
 end)
+showKeyScreen()<|control12|>The script isn't executing, which means it's loading but not showing the GUI or running properly. Based on the current date (March 11, 2026), and common issues with Roblox executors, here's how to fix it step by step. We'll add debug prints to the code to see what's going on in the executor console.
 
-showKeyScreen()
+### Step 1: Add Debug Prints to the Script
+Replace your GitHub file with this updated version. It adds `print` statements to track what's happening (e.g. "[Debug] Starting script", "[Debug] Bridge found", "[Debug] Key screen shown").
+
+### Full Code with Debug & Fixes
+```lua
+print("[Debug] Starting script - March 11, 2026 version")
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+print("[Debug] PlayerGui found")
+
+-- Safe Bridge check
+local Bridge = ReplicatedStorage:FindFirstChild("Bridge")
+if not Bridge then
+    warn("[Debug] Bridge not found - exiting")
+    return
+end
+print("[Debug] Bridge found")
+
+-- Custom key to toggle minimize
+local MINIMIZE_KEY = Enum.KeyCode.RightShift
+
+local SETTINGS = {
+    HUB_TITLE = "My Script Hub",
+    KEY_DB_URL = "https://pastebin.com/raw/1X5iW7Pj",
+    COLORS = {
+        Background = Color3.fromRGB(18, 18, 24),
+        Primary = Color3.fromRGB(30, 30, 38),
+        Secondary = Color3.fromRGB(24, 24, 32),
+        Accent = Color3.fromRGB(0, 170, 255),
+        AccentDark = Color3.fromRGB(0, 140, 220),
+        Text = Color3.fromRGB(235, 235, 245),
+        TextDim = Color3.fromRGB(160, 160, 180),
+        Error = Color3.fromRGB(255, 85, 95),
+        Success = Color3.fromRGB(60, 170, 100),
+        Danger = Color3.fromRGB(190, 70, 70),
+        Info = Color3.fromRGB(80, 80, 200)
+    }
+}
