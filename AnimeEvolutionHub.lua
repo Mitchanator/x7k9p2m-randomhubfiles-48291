@@ -260,7 +260,7 @@ Tabs.Credits = {
         txt.Font = Enum.Font.Gotham
         txt.TextSize = 16
         txt.TextColor3 = SETTINGS.COLORS.TextDim
-        txt.Text = "Hub with Egg Roll & Rebirth tabs.\nPress RightShift to minimize/maximize.\nEnjoy!"
+        txt.Text = "Hub with Egg Roll & Rebirth tabs.\nPress RightShift to minimize/maximize.\nEnjoy! /nMade by Mitchanator"
         txt.Parent = container
     end
 }
@@ -604,3 +604,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 showKeyScreen()
+
