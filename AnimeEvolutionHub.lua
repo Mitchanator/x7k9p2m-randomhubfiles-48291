@@ -7,17 +7,17 @@ local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Safe check for Bridge (prevents crash/hang if missing)
+-- Safe check for Bridge
 local Bridge
 local bridgeSuccess, bridgeErr = pcall(function()
     Bridge = ReplicatedStorage:FindFirstChild("Bridge")
     if not Bridge then
-        warn("[Script] Bridge RemoteEvent not found - exiting safely")
+        warn("[Script] Bridge RemoteEvent not found")
     end
 end)
 
 if not bridgeSuccess or not Bridge then
-    warn("[Script Critical] Could not locate Bridge: " .. tostring(bridgeErr))
+    warn("[Script Critical] Bridge missing: " .. tostring(bridgeErr))
     return
 end
 
@@ -82,7 +82,7 @@ Tabs.Home = {
         desc.Font = Enum.Font.Gotham
         desc.TextSize = 17
         desc.TextColor3 = SETTINGS.COLORS.TextDim
-        desc.Text = "Separate tabs for Egg Roll & Rebirth.\nStable & crash-free.\nEnjoy!"
+        desc.Text = "Egg Roll and Rebirth now in separate tabs.\nStable & crash-free.\nHave fun!"
         desc.Parent = container
     end
 }
@@ -263,7 +263,7 @@ Tabs.Credits = {
         txt.Font = Enum.Font.Gotham
         txt.TextSize = 16
         txt.TextColor3 = SETTINGS.COLORS.TextDim
-        txt.Text = "Hub with timed key system.\nEgg Roll & Rebirth separated.\nStable & crash-free."
+        txt.Text = "Hub with timed key system.\nEgg Roll & Rebirth now in separate tabs.\nStable & crash-free."
         txt.Parent = container
     end
 }
