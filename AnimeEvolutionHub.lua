@@ -271,7 +271,7 @@ Tabs["R&A"] = {
                             local args = {"RankUp", "Evolve"}
                             Bridge:FireServer(unpack(args))
                         end)
-                        task.wait(1)
+                        task.wait(60)
                     end
                 end)
             else
@@ -302,7 +302,7 @@ Tabs["R&A"] = {
                             local args = {"Auras", "Evolve"}
                             Bridge:FireServer(unpack(args))
                         end)
-                        task.wait(1)
+                        task.wait(60)
                     end
                 end)
             else
